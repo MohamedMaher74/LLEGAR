@@ -84,7 +84,7 @@ exports.isOwner = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllItems = factory.getAll(Item);
-const options = { populate: ['reviews'] };
+const options = { populate: ['reviews', 'bookings'] };
 exports.getItem = factory.getOne(Item, options);
 exports.createItem = factory.createOne(Item);
 exports.updateItem = factory.updateOne(Item);

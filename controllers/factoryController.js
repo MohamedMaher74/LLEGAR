@@ -2,7 +2,10 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Item = require('../models/itemModel');
 const Review = require('../models/reviewModel');
+const Booking = require('../models/bookingModel');
+const User = require('../models/userModel');
 const APIFeatures = require('../utils/apiFeatures');
+const moment = require('moment');
 
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
@@ -25,6 +28,17 @@ exports.deleteOne = (Model) =>
     }
 
     if (Model == Review) {
+      if (req.user.id != doc.user.id) {
+        return next(
+          new AppError(
+            'You do not have permission to perform this action, Only for the owner of this item',
+            401
+          )
+        );
+      }
+    }
+
+    if (Model == Booking) {
       if (req.user.id != doc.user.id) {
         return next(
           new AppError(
@@ -74,6 +88,17 @@ exports.updateOne = (Model) =>
       }
     }
 
+    if (Model == Booking) {
+      if (req.user.id != doc.user.id) {
+        return next(
+          new AppError(
+            'You do not have permission to perform this action, Only for the owner of this item',
+            401
+          )
+        );
+      }
+    }
+
     doc = await Model.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -89,20 +114,69 @@ exports.updateOne = (Model) =>
 
 exports.createOne = (Model) =>
   catchAsync(async (req, res, next) => {
-    const doc = await Model.create(req.body);
-    
-    if(Model == Item) {
-      doc.Owner = req.user.id;
-    }
-    
-    await doc.save({ validateBeforeSave: false });
+    if (Model == Booking) {
+      const item = await Item.findById(req.params.itemId);
+      if (!item) {
+        return next(new AppError('No document found with that ID'), 404);
+      }
 
-    res.status(201).json({
-      status: 'success',
-      data: {
-        item: doc,
-      },
-    });
+      const {
+        acceptCondition,
+        cardName,
+        cardNumber,
+        expiryDate,
+        CVV,
+        startDate,
+        endDate,
+      } = req.body;
+
+      const numDays = moment(endDate).diff(moment(startDate), 'days') + 1;
+      const amount = item.pricePerDay * numDays;
+      const commission = amount * 0.1;
+      const insurance = amount * 0.05;
+      const total = amount + commission + insurance;
+
+      const booking = new Booking({
+        item: req.params.itemId,
+        user: req.user._id,
+        startDate,
+        endDate,
+        amount,
+        commission,
+        insurance,
+        total,
+        acceptCondition,
+        cardName,
+        cardNumber,
+        expiryDate,
+        CVV,
+        createdAt: new Date(),
+      });
+
+      await booking.save();
+
+      res.status(201).json({
+        status: 'success',
+        data: {
+          Document: booking,
+        },
+      });
+    } else {
+      const doc = await Model.create(req.body);
+
+      if (Model == Item) {
+        doc.Owner = req.user.id;
+      }
+
+      await doc.save({ validateBeforeSave: false });
+
+      res.status(201).json({
+        status: 'success',
+        data: {
+          Document: doc,
+        },
+      });
+    }
   });
 
 exports.getOne = (Model, options) =>
@@ -121,6 +195,39 @@ exports.getOne = (Model, options) =>
 
     if (!doc) {
       return next(new AppError('No item found with that ID', 404));
+    }
+
+    if (Model == Item) {
+      if (req.user.id != doc.Owner._id) {
+        return next(
+          new AppError(
+            'You do not have permission to perform this action, Only for the owner of this item',
+            401
+          )
+        );
+      }
+    }
+
+    if (Model == Review) {
+      if (req.user.id != doc.user.id) {
+        return next(
+          new AppError(
+            'You do not have permission to perform this action, Only for the owner of this item',
+            401
+          )
+        );
+      }
+    }
+
+    if (Model == Booking) {
+      if (req.user.id != doc.user.id) {
+        return next(
+          new AppError(
+            'You do not have permission to perform this action, Only for the owner of this item',
+            401
+          )
+        );
+      }
     }
 
     res.status(200).json({

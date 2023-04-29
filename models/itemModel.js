@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const moment = require('moment');
 
 const itemSchema = new mongoose.Schema(
   {
@@ -115,6 +114,12 @@ const itemSchema = new mongoose.Schema(
 
 itemSchema.virtual('reviews', {
   ref: 'Review',
+  foreignField: 'item',
+  localField: '_id',
+});
+
+itemSchema.virtual('bookings', {
+  ref: 'Booking',
   foreignField: 'item',
   localField: '_id',
 });

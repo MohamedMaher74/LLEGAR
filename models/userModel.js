@@ -81,7 +81,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       select: false,
-    }
+    },
   },
   {
     toJSON: { virtuals: true },
@@ -106,6 +106,12 @@ userSchema.virtual('reviews', {
 userSchema.virtual('items', {
   ref: 'Item',
   foreignField: 'Owner',
+  localField: '_id',
+});
+
+userSchema.virtual('bookings', {
+  ref: 'Booking',
+  foreignField: 'user',
   localField: '_id',
 });
 

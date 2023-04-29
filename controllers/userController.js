@@ -118,7 +118,7 @@ exports.createUser = (req, res) => {
 };
 
 exports.getAllUsers = factory.getAll(User);
-const options = { populate: ['items', 'reviews'] };
+const options = { populate: ['items', 'reviews', 'bookings'] };
 exports.getUser = factory.getOne(User, options);
 exports.updateUser = factory.updateOne(User);
 exports.deleteUser = factory.deleteOne(User);
